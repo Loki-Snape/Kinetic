@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String  @id @default(uuid())
+  username     String  @unique
+  email        String  @unique
+  passwordHash String
+  tasks        Task[]
+  activities   Activity[]
+ }
+
+
+model Board {
+  id      String   @id @default(uuid())
+  title   String
+  ownerId String
+  columns Column[]
+}
+
+model Column {
+  id         String @id @default(uuid())
+  title      String
+  orderIndex Int
+  boardId    String
+  board      Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  tasks      Task[]
+  activities Activity[]
+  oldActivities Activity[] @relation("OldColumn")
+}
+
+enum Priority {
+  Low
+  Medium
+  High
+}
+
+
+model Task {
+  id             String   @id @default(uuid())
+  title          String
+  description    String?
+  codeSnippet    String?
+  orderIndex     Int
+  columnId       String
+  column         Column   @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  assignedUserId String?
+  assignedUser   User?    @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
+  priority       Priority @default(Medium)
+  tags           String[]
+  activities     Activity[]
+}
+
+model Activity {
+  id          Int      @id @default(autoincrement())
+  timestamp   DateTime @default(now())
+  type        String
+  description String?
+  userId      String
+  taskId      String?
+  columnId    String?
+  oldColumnId String?
+  oldOrder    Int?
+  newOrder    Int?
+  user        User     @relation(fields: [userId], references: [id])
+  task        Task?    @relation(fields: [taskId], references: [id])
+  column      Column?  @relation(fields: [columnId], references: [id])
+  oldColumn   Column?  @relation("OldColumn", fields: [oldColumnId], references: [id])
+}
